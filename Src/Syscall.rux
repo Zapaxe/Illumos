@@ -1,17 +1,14 @@
 /*
-    Linux API
+    Illumos API
     Copyright © 2026 Rux Contributors
     Licensed under the MIT License
 */
 
 module Illumos {
-    // Standard file descriptors used by read/write-style syscalls.
     const Stdin: int32 = 0i32;
     const Stdout: int32 = 1i32;
     const Stderr: int32 = 2i32;
 
-    // illumos / OmniOS x86_64 syscall numbers for the small first supported
-    // surface.
     const SYS_READ: uint64 = 3u64;
     const SYS_WRITE: uint64 = 4u64;
     const SYS_CLOSE: uint64 = 6u64;
@@ -20,8 +17,9 @@ module Illumos {
     const SYS_BRK: uint64 = 17u64;
     const SYS_GETPID: uint64 = 20u64;
     const SYS_EXIT: uint64 = 1u64;
+    const SYS_NANOSLEEP: uint64 = 199u64;
+    const SYS_CLOCK_GETTIME: uint64 = 191u64;
 
-    // mmap protection and mapping flags used by Mmap.
     const PROT_READ: int32 = 1i32;
     const PROT_WRITE: int32 = 2i32;
     const PROT_EXEC: int32 = 4i32;
@@ -29,10 +27,8 @@ module Illumos {
     const MAP_PRIVATE: int32 = 2i32;
     const MAP_ANONYMOUS: int32 = 256i32;
 
-    @[Import(lib: "rux-linux")]
+    @[Import(lib: "rux-illumos")]
     extern {
-        // Provided by the Rux Linux ELF linker. These wrappers return raw
-        // syscall results: success is non-negative, errors are negative errno.
         func __rux_linux_syscall0(number: uint64) -> int64;
         func __rux_linux_syscall1(number: uint64, arg0: uint64) -> int64;
         func __rux_linux_syscall2(number: uint64, arg0: uint64, arg1: uint64) -> int64;
@@ -42,7 +38,6 @@ module Illumos {
         func __rux_linux_syscall6(number: uint64, arg0: uint64, arg1: uint64, arg2: uint64, arg3: uint64, arg4: uint64, arg5: uint64) -> int64;
     }
 
-    // Raw syscall entry points for callers that need an API not wrapped below.
     func Syscall0(number: uint64) -> int64 {
         return __rux_linux_syscall0(number);
     }
@@ -71,7 +66,6 @@ module Illumos {
         return __rux_linux_syscall6(number, arg0, arg1, arg2, arg3, arg4, arg5);
     }
 
-    // Thin convenience wrappers around common process, I/O, and memory syscalls.
     func Read(fd: int32, buffer: *opaque, count: uint) -> int64 {
         return Syscall3(SYS_READ, fd as uint64, buffer as uint64, count as uint64);
     }
@@ -104,7 +98,22 @@ module Illumos {
         return Syscall1(SYS_BRK, addr as uint64);
     }
 
-    // Syscall errors are reported as -errno in the range -4095..-1.
+    func Nanosleep(req: *opaque, rem: *opaque) -> int64 {
+        return Syscall2(SYS_NANOSLEEP, req as uint64, rem as uint64);
+    }
+
+    struct Timespec {
+        tv_sec: int64;
+        tv_nsec: int64;
+    }
+
+    const CLOCK_MONOTONIC: int32 = 4i32;
+    const CLOCK_REALTIME: int32 = 3i32;
+
+    func ClockGetTime(clockId: int32, ts: *Timespec) -> int64 {
+        return Syscall2(SYS_CLOCK_GETTIME, clockId as uint64, ts as uint64);
+    }
+
     func IsError(result: int64) -> bool {
         return result < 0i64 && result >= -4095i64;
     }
