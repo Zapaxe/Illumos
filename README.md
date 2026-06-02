@@ -10,7 +10,7 @@ You can install the package using Rux CLI
 rux add Illumos
 ```
 
-Add `Illumos` to your `Rux.toml`:
+or add `Illumos` to your `Rux.toml`:
 
 ```toml
 [Dependencies]
