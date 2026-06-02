@@ -115,10 +115,11 @@ module Illumos {
     }
 
     func IsError(result: int64) -> bool {
-        return result < 0i64 && result >= -4095i64;
+        // Illumos kernel returns positive errno values on syscall failure
+        return result > 0i64 && result <= 4095i64;
     }
 
     func Errno(result: int64) -> int64 {
-        return IsError(result) ? -result : 0i64;
+        return IsError(result) ? result : 0i64;
     }
 }
